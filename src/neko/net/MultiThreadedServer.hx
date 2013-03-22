@@ -144,7 +144,7 @@ class MultiThreadedServer < Client, Message > {
 			//}
 			
 			//Do pending work
-			var msg = Thread.readMessage(false);
+			var msg:Dynamic = Thread.readMessage(false);
 			while (msg != null) {
 				switch (msg.a) {
 					case ACTION_READY:
