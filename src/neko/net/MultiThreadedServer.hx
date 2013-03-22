@@ -148,15 +148,19 @@ class MultiThreadedServer < Client, Message > {
 			while (msg != null) {
 				switch (msg.a) {
 					case ACTION_READY:
-						clients.push(msg.s);
+						//Check to make sure client is not disconnected
+						if (untyped msg.s.__client != null) clients.push(msg.s);
 					case ACTION_DISCONNECT:
-						if (clients.remove(msg.s)) {
-							var cl = untyped msg.s.__client;
-							if (cl != null) doApplicationWork(msg.s, callback(clientDisconnected, cl.data));
-						}
-						try {
-							msg.s.close();
-						} catch (e:Dynamic) {
+						var cl = untyped msg.s.__client;
+						if (cl != null) {
+							//Set socket client attribute to null to mark this socket as closed
+							untyped msg.s.__client = null;
+							doApplicationWork(msg.s, callback(clientDisconnected, cl.data));
+							clients.remove(msg.s);
+							try {
+								msg.s.close();
+							} catch (e:Dynamic) {
+							}
 						}
 				}
 				msg = Thread.readMessage(false);
