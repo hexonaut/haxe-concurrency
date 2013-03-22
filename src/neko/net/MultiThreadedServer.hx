@@ -17,7 +17,6 @@ import neko.vm.Mutex;
 import neko.vm.Thread;
 import sys.net.Host;
 import sys.net.Socket;
-import www.util.CyclicCounter;
 
 /**
  * An x worker thread, y io thread multithreaded server for server applications with neko.
