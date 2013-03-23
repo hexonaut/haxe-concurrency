@@ -31,7 +31,8 @@ private typedef ClientData<Client> = {
 	data:Client,
 	buf:Bytes,
 	bufbytes:Int,
-	workerId:Int
+	workerId:Int,
+	disconnecting:Bool
 };
 
 class MultiThreadedServer < Client, Message > {
@@ -114,7 +115,7 @@ class MultiThreadedServer < Client, Message > {
 						var sock = serv.accept();
 						sock.setBlocking(true);
 						
-						cl = { sock:sock, data:null, buf:Bytes.alloc(defaultBufSize), bufbytes:0, workerId:nextWorkerId++ };
+						cl = { sock:sock, data:null, buf:Bytes.alloc(defaultBufSize), bufbytes:0, workerId:nextWorkerId++, disconnecting:false };
 						if (nextWorkerId >= numWorkerThreads) nextWorkerId = 0;
 						
 						untyped sock.__client = cl;
@@ -149,12 +150,12 @@ class MultiThreadedServer < Client, Message > {
 				switch (msg.a) {
 					case ACTION_READY:
 						//Check to make sure client is not disconnected
-						if (untyped msg.s.__client != null) clients.push(msg.s);
+						if (!untyped msg.s.__client.disconnecting) clients.push(msg.s);
 					case ACTION_DISCONNECT:
-						var cl = untyped msg.s.__client;
-						if (cl != null) {
-							//Set socket client attribute to null to mark this socket as closed
-							untyped msg.s.__client = null;
+						var cl:ClientData<Client> = untyped msg.s.__client;
+						if (!cl.disconnecting) {
+							//Set socket client disconnecting attribute to true to mark the user as disconnecting
+							cl.disconnecting = true;
 							doApplicationWork(msg.s, callback(clientDisconnected, cl.data));
 							clients.remove(msg.s);
 							try {
@@ -222,6 +223,9 @@ class MultiThreadedServer < Client, Message > {
 	}
 	
 	/*function ioException (sock:Socket):Void {
+		#if debug
+		trace("GOT EXCEPTION");
+		#end
 		if (sock != serv) disconnectClient(sock);
 	}*/
 	
@@ -230,7 +234,7 @@ class MultiThreadedServer < Client, Message > {
 	}
 	
 	function doApplicationWork (sock:Socket, f:Void -> Void):Void {
-		//Need to use constant per user workerId to make sure messages are processed in-order and sequentially
+		//Need to use constant per user workerId to make sure messages are processed sequentially
 		workerThreads[untyped sock.__client.workerId].sendMessage(f);
 	}
 	
