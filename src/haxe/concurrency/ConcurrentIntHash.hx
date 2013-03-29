@@ -86,15 +86,18 @@ class ConcurrentIntHash<T> {
 		return result;
 	}
 	
-	public inline function setIfNotExists (key:Int, val:T):Bool {
+	public inline function setIfNotExists (key:Int, val:T):T {
 		lock.acquire();
-		var bool = !hash.exists(key);
-		if (bool) hash.set(key, val);
+		var oldval = hash.get(key);
+		if (oldval == null) {
+			hash.set(key, val);
+			oldval = val;
+		}
 		lock.release();
-		return bool;
+		return oldval;
 	}
 	
-	public inline function getAndRemove (key:Int):T {
+	public inline function getAndRemove (key:Int):Null<T> {
 		lock.acquire();
 		var result = hash.get(key);
 		hash.remove(key);

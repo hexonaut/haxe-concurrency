@@ -8,8 +8,6 @@
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ****/
 
-
-
 package haxe.concurrency;
 
 /**
@@ -34,12 +32,23 @@ class CopyOnWriteArray<T> {
 		return arr.length;
 	}
 	
-	public function concat (a:Array<T>):Array<T> {
-		return arr.concat(a);
+	public function concat (a:CopyOnWriteArray<T>):CopyOnWriteArray<T> {
+		return fromArray(arr.concat(a.arr));
 	}
 	
-	public function copy ():Array<T> {
-		return arr.copy();
+	public function copy ():CopyOnWriteArray<T> {
+		return fromArray(arr.copy());
+	}
+	
+	public function get (pos:Int):Null<T> {
+		return arr[pos];
+	}
+	
+	public function set (pos:Int, x:T):T {
+		var a = arr.copy();
+		a[pos] = x;
+		arr = a;
+		return x;
 	}
 	
 	public function insert (pos:Int, x:T):Void {
@@ -84,7 +93,7 @@ class CopyOnWriteArray<T> {
 	
 	public function reverse ():Void {
 		var a = arr.copy();
-		a.reverse(x);
+		a.reverse();
 		arr = a;
 	}
 	
@@ -117,6 +126,12 @@ class CopyOnWriteArray<T> {
 		var a = arr.copy();
 		a.unshift(x);
 		arr = a;
+	}
+	
+	public inline static function fromArray<T> (a:Array<T>):CopyOnWriteArray<T> {
+		var b = new CopyOnWriteArray<T>();
+		b.arr = a;
+		return b;
 	}
 	
 }
