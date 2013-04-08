@@ -32,6 +32,7 @@ class CopyOnWriteArray<T> {
 	var arr:Array<T>;
 
 	public function new () {
+		lock = new Mutex();
 		arr = new Array<T>();
 	}
 	
