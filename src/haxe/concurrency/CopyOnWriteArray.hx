@@ -10,6 +10,12 @@
 
 package haxe.concurrency;
 
+#if neko
+import neko.vm.Mutex;
+#elseif cpp
+import cpp.vm.Mutex;
+#end
+
 /**
  * A thread safe array. The array is copied completely during a write. Useful for read-heavy usage.
  * Be very careful when iterating by index as the array length can change during this.
@@ -22,6 +28,7 @@ class CopyOnWriteArray<T> {
 	
 	public var length(_length, null):Int;
 	
+	var lock:Mutex;	//Write mutex
 	var arr:Array<T>;
 
 	public function new () {
@@ -37,7 +44,7 @@ class CopyOnWriteArray<T> {
 	}
 	
 	public function copy ():CopyOnWriteArray<T> {
-		return fromArray(arr.copy());
+		return fromArray(arr);
 	}
 	
 	public function get (pos:Int):Null<T> {
@@ -45,21 +52,25 @@ class CopyOnWriteArray<T> {
 	}
 	
 	public function set (pos:Int, x:T):T {
+		lock.acquire();
 		var a = arr.copy();
 		a[pos] = x;
 		arr = a;
+		lock.release();
 		return x;
 	}
 	
 	public function insert (pos:Int, x:T):Void {
 		var a = new Array();
 		var index = 0;
+		lock.acquire();
 		for (i in arr) {
 			if (index == pos) a.push(x);
 			a.push(i);
 			index++;
 		}
 		arr = a;
+		lock.release();
 	}
 	
 	public function iterator ():Iterator<T> {
@@ -71,51 +82,63 @@ class CopyOnWriteArray<T> {
 	}
 	
 	public function pop ():Null<T> {
+		lock.acquire();
 		var a = arr.copy();
 		var e = a.pop();
 		arr = a;
+		lock.release();
 		return e;
 	}
 	
 	public function push (x:T):Int {
+		lock.acquire();
 		var a = arr.copy();
 		var l = a.push(x);
 		arr = a;
+		lock.release();
 		return l;
 	}
 	
 	public function remove (x:T):Bool {
+		lock.acquire();
 		var a = arr.copy();
 		var b = a.remove(x);
 		arr = a;
+		lock.release();
 		return b;
 	}
 	
 	public function reverse ():Void {
+		lock.acquire();
 		var a = arr.copy();
 		a.reverse();
 		arr = a;
+		lock.release();
 	}
 	
 	public function shift ():Null<T> {
+		lock.acquire();
 		var a = arr.copy();
 		var e = a.shift();
 		arr = a;
+		lock.release();
 		return e;
 	}
 	
-	public function slice (pos:Int, ?end:Int):Array<T> {
-		return arr.slice(pos, end);
+	public function slice (pos:Int, ?end:Int):CopyOnWriteArray<T> {
+		return fromArray(arr.slice(pos, end));
 	}
 	
 	public function sort (f:T->T->Int):Void {
+		lock.acquire();
 		var a = arr.copy();
 		a.sort(f);
 		arr = a;
+		lock.release();
 	}
 	
-	public function splice (pos:Int, len:Int):Array<T> {
-		return arr.splice(pos, len);
+	public function splice (pos:Int, len:Int):CopyOnWriteArray<T> {
+		return fromArray(arr.splice(pos, len));
 	}
 	
 	public function toString ():String {
@@ -123,12 +146,14 @@ class CopyOnWriteArray<T> {
 	}
 	
 	public function unshift (x:T):Void {
+		lock.acquire();
 		var a = arr.copy();
 		a.unshift(x);
 		arr = a;
+		lock.release();
 	}
 	
-	public inline static function fromArray<T> (a:Array<T>):CopyOnWriteArray<T> {
+	inline static function fromArray<T> (a:Array<T>):CopyOnWriteArray<T> {
 		var b = new CopyOnWriteArray<T>();
 		b.arr = a;
 		return b;
