@@ -26,8 +26,9 @@ Comparison to Non-Concurrent Data Structures
 Throughput Speed Testing
 ------------------------
 
-* Array Read 20M items: 1319 ms
-* CopyOnWriteArray Read 20M items (2 Threads): 1401 ms
-* CopyOnWriteArray Read 20M items (4 Threads): 840 ms
-* CopyOnWriteArray Read 20M items (8 Threads): 815 ms
-* CopyOnWriteArray Read 20M items (16 Threads): 776 ms
+* Array Read 20M items: 1363 ms
+* CopyOnWriteArray Read 20M items (2 Threads): 1431 ms
+* CopyOnWriteArray Read 20M items (4 Threads): 813 ms
+* CopyOnWriteArray Read 20M items (8 Threads): 597 ms
+* CopyOnWriteArray Read 20M items (16 Threads): 369 ms
+* CopyOnWriteArray Read 20M items (32 Threads): 182 ms

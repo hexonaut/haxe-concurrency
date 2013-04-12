@@ -151,45 +151,76 @@ class DataStructuresPerformanceTesting {
 		}
 		durTotal("Array Read 20M items");
 		
-		mark();
+		var total:Float = 0;
+		var lock = new Mutex();
 		runConcurrentFunc(function (tid:Int):Void {
 			var low = (20000000 >> 1) * tid;
 			var high = (20000000 >> 1) * (tid + 1);
+			var lastTime = Sys.time();
 			for (i in low ... high) {
 				a4[i % 10000];
 			}
+			lock.acquire();
+			total += Sys.time() - lastTime;
+			lock.release();
 		}, 2);
-		durTotal("CopyOnWriteArray Read 20M items (2 Threads)");
+		Lib.println("CopyOnWriteArray Read 20M items (2 Threads): " + Std.int(total*1e3/2) + " ms");
 		
-		mark();
+		total = 0;
 		runConcurrentFunc(function (tid:Int):Void {
 			var low = (20000000 >> 2) * tid;
 			var high = (20000000 >> 2) * (tid + 1);
+			var lastTime = Sys.time();
 			for (i in low ... high) {
 				a4[i % 10000];
 			}
+			lock.acquire();
+			total += Sys.time() - lastTime;
+			lock.release();
 		}, 4);
-		durTotal("CopyOnWriteArray Read 20M items (4 Threads)");
+		Lib.println("CopyOnWriteArray Read 20M items (4 Threads): " + Std.int(total*1e3/4) + " ms");
 		
-		mark();
+		total = 0;
 		runConcurrentFunc(function (tid:Int):Void {
 			var low = (20000000 >> 3) * tid;
 			var high = (20000000 >> 3) * (tid + 1);
+			var lastTime = Sys.time();
 			for (i in low ... high) {
 				a4[i % 10000];
 			}
+			lock.acquire();
+			total += Sys.time() - lastTime;
+			lock.release();
 		}, 8);
-		durTotal("CopyOnWriteArray Read 20M items (8 Threads)");
+		Lib.println("CopyOnWriteArray Read 20M items (8 Threads): " + Std.int(total*1e3/8) + " ms");
 		
-		mark();
+		total = 0;
 		runConcurrentFunc(function (tid:Int):Void {
 			var low = (20000000 >> 4) * tid;
 			var high = (20000000 >> 4) * (tid + 1);
+			var lastTime = Sys.time();
 			for (i in low ... high) {
 				a4[i % 10000];
 			}
+			lock.acquire();
+			total += Sys.time() - lastTime;
+			lock.release();
 		}, 16);
-		durTotal("CopyOnWriteArray Read 20M items (16 Threads)");
+		Lib.println("CopyOnWriteArray Read 20M items (16 Threads): " + Std.int(total*1e3/16) + " ms");
+		
+		total = 0;
+		runConcurrentFunc(function (tid:Int):Void {
+			var low = (20000000 >> 5) * tid;
+			var high = (20000000 >> 5) * (tid + 1);
+			var lastTime = Sys.time();
+			for (i in low ... high) {
+				a4[i % 10000];
+			}
+			lock.acquire();
+			total += Sys.time() - lastTime;
+			lock.release();
+		}, 32);
+		Lib.println("CopyOnWriteArray Read 20M items (32 Threads): " + Std.int(total*1e3/32) + " ms");
 	}
 
 }
