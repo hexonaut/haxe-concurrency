@@ -24,7 +24,7 @@ import cpp.vm.Mutex;
  * @author Sam MacPherson
  */
 
-class CopyOnWriteArray<T> {
+class CopyOnWriteArray<T> implements ArrayAccess<T> {
 	
 	public var length(_length, null):Int;
 	
@@ -40,28 +40,15 @@ class CopyOnWriteArray<T> {
 		return arr.length;
 	}
 	
-	public function concat (a:CopyOnWriteArray<T>):CopyOnWriteArray<T> {
+	public inline function concat (a:CopyOnWriteArray<T>):CopyOnWriteArray<T> {
 		return fromArray(arr.concat(a.arr));
 	}
 	
-	public function copy ():CopyOnWriteArray<T> {
+	public inline function copy ():CopyOnWriteArray<T> {
 		return fromArray(arr);
 	}
 	
-	public function get (pos:Int):Null<T> {
-		return arr[pos];
-	}
-	
-	public function set (pos:Int, x:T):T {
-		lock.acquire();
-		var a = arr.copy();
-		a[pos] = x;
-		arr = a;
-		lock.release();
-		return x;
-	}
-	
-	public function insert (pos:Int, x:T):Void {
+	public inline function insert (pos:Int, x:T):Void {
 		var a = new Array();
 		var index = 0;
 		lock.acquire();
@@ -74,15 +61,15 @@ class CopyOnWriteArray<T> {
 		lock.release();
 	}
 	
-	public function iterator ():Iterator<T> {
+	public inline function iterator ():Iterator<T> {
 		return arr.iterator();
 	}
 	
-	public function join (sep:String):String {
+	public inline function join (sep:String):String {
 		return arr.join(sep);
 	}
 	
-	public function pop ():Null<T> {
+	public inline function pop ():Null<T> {
 		lock.acquire();
 		var a = arr.copy();
 		var e = a.pop();
@@ -91,7 +78,7 @@ class CopyOnWriteArray<T> {
 		return e;
 	}
 	
-	public function push (x:T):Int {
+	public inline function push (x:T):Int {
 		lock.acquire();
 		var a = arr.copy();
 		var l = a.push(x);
@@ -100,7 +87,7 @@ class CopyOnWriteArray<T> {
 		return l;
 	}
 	
-	public function remove (x:T):Bool {
+	public inline function remove (x:T):Bool {
 		lock.acquire();
 		var a = arr.copy();
 		var b = a.remove(x);
@@ -109,7 +96,7 @@ class CopyOnWriteArray<T> {
 		return b;
 	}
 	
-	public function reverse ():Void {
+	public inline function reverse ():Void {
 		lock.acquire();
 		var a = arr.copy();
 		a.reverse();
@@ -117,7 +104,7 @@ class CopyOnWriteArray<T> {
 		lock.release();
 	}
 	
-	public function shift ():Null<T> {
+	public inline function shift ():Null<T> {
 		lock.acquire();
 		var a = arr.copy();
 		var e = a.shift();
@@ -126,11 +113,11 @@ class CopyOnWriteArray<T> {
 		return e;
 	}
 	
-	public function slice (pos:Int, ?end:Int):CopyOnWriteArray<T> {
+	public inline function slice (pos:Int, ?end:Int):CopyOnWriteArray<T> {
 		return fromArray(arr.slice(pos, end));
 	}
 	
-	public function sort (f:T->T->Int):Void {
+	public inline function sort (f:T->T->Int):Void {
 		lock.acquire();
 		var a = arr.copy();
 		a.sort(f);
@@ -138,15 +125,15 @@ class CopyOnWriteArray<T> {
 		lock.release();
 	}
 	
-	public function splice (pos:Int, len:Int):CopyOnWriteArray<T> {
+	public inline function splice (pos:Int, len:Int):CopyOnWriteArray<T> {
 		return fromArray(arr.splice(pos, len));
 	}
 	
-	public function toString ():String {
+	public inline function toString ():String {
 		return arr.toString();
 	}
 	
-	public function unshift (x:T):Void {
+	public inline function unshift (x:T):Void {
 		lock.acquire();
 		var a = arr.copy();
 		a.unshift(x);
@@ -158,6 +145,19 @@ class CopyOnWriteArray<T> {
 		var b = new CopyOnWriteArray<T>();
 		b.arr = a;
 		return b;
+	}
+	
+	function __get (pos:Int):Null<T> {
+		return arr[pos];
+	}
+	
+	function __set (pos:Int, x:T):T {
+		lock.acquire();
+		var a = arr.copy();
+		a[pos] = x;
+		arr = a;
+		lock.release();
+		return x;
 	}
 	
 }
