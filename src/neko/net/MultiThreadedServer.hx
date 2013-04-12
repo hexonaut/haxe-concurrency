@@ -12,11 +12,18 @@ package neko.net;
 
 import haxe.io.Bytes;
 import haxe.io.Eof;
+import sys.net.Host;
+import sys.net.Socket;
+
+#if neko
 import neko.vm.Lock;
 import neko.vm.Mutex;
 import neko.vm.Thread;
-import sys.net.Host;
-import sys.net.Socket;
+#elseif cpp
+import cpp.vm.Lock;
+import cpp.vm.Mutex;
+import cpp.vm.Thread;
+#end
 
 /**
  * An x worker thread, y io thread multithreaded server for server applications with neko.
