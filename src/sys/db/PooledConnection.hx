@@ -31,8 +31,8 @@ enum Transaction {
 }
 
 /**
- * A thread-safe abstraction layer for accessing databases. Connections are pooled and automatically restarted when a failure occurs.
- * Requests made during a failure will be automagically retried. Set maxRetries to 0 to handle failures manually.
+ * A thread-safe abstraction layer for accessing databases.
+ * Connections are pooled and automatically restarted when a failure occurs.
  * If using a transaction you must either commit or rollback on the same thread.
  * 
  * @author Sam MacPherson
@@ -140,14 +140,12 @@ class PooledConnection implements Connection {
 	function doQuery (method:String, args:Array<Dynamic>, ?transaction:Transaction):Dynamic {
 		var conn = getAvailableConnection();
 		var result:Dynamic;
-		expRetry(function ():Void {
-			try {
-				result = Reflect.callMethod(conn, Reflect.field(conn, method), args);
-			} catch (e:Dynamic) {
-				conn = renewConnection(conn);
-				throw e;
-			}
-		});
+		try {
+			result = Reflect.callMethod(conn, Reflect.field(conn, method), args);
+		} catch (e:Dynamic) {
+			expRetry(function ():Void { try { conn = renewConnection(conn); } catch (e:Dynamic) { conn.close(); throw e; } } );
+			throw e;
+		}
 		if (transaction != null) {
 			switch (transaction) {
 				case START: 
