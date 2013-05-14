@@ -1,4 +1,4 @@
-haxe-concurrency is a library to provide high level thread-safe data structures for all targets that support shared memory concurrency. Also included is a fully concurrent server which is similar to neko.net.ThreadServer, except the application logic is concurrent as well. Supported targets are neko and c++.
+haxe-concurrency is a library to provide high level thread-safe data structures for all targets that support shared memory concurrency. Also included is . Supported targets are neko and c++.
 
 Data Structures
 ===============
@@ -32,3 +32,23 @@ Throughput Speed Testing
 * CopyOnWriteArray Read 20M items (8 Threads): 597 ms
 * CopyOnWriteArray Read 20M items (16 Threads): 369 ms
 * CopyOnWriteArray Read 20M items (32 Threads): 182 ms
+
+Extras
+======
+
+* neko.net.MultiThreadedServer - A fully concurrent server which is similar to neko.net.ThreadServer, except the application logic is concurrent as well.
+* sys.db.PooledConnection -  A thread-safe abstraction layer for accessing databases. Connections are pooled and automatically restarted when a failure occurs. Requests made during a failure will be automagically retried.
+
+PooledConnection Usage
+----------------------
+
+Usage is very simple. Instead of creating your Mysql.connect() or Sqlite.read() connections just create a new PooledConnection and pass in a factory constructor as shown below:
+	
+	//Create a pooled connection
+	var cnx = new sys.db.PooledConnection(function ():Connection {
+		return Mysql.connect( { host:HOST, port:ORT, user:USER, pass:PASS, socket:null, database:DATABASE } );
+	}, POOLED_CONNECTIONS);
+	
+	//Use with SPOD!
+	//A point of caution - SPOD uses a global object cache by default so you will need to deal with this when using in a multithreaded application
+	sys.db.Manager.cnx = cnx;
