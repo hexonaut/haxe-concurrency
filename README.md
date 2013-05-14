@@ -37,7 +37,7 @@ Extras
 ======
 
 * neko.net.MultiThreadedServer - A fully concurrent server which is similar to neko.net.ThreadServer, except the application logic is concurrent as well.
-* sys.db.PooledConnection -  A thread-safe abstraction layer for accessing databases. Connections are pooled and automatically restarted when a failure occurs. Requests made during a failure will be automagically retried.
+* sys.db.PooledConnection -  A thread-safe abstraction layer for accessing databases. Connections are pooled and automatically restarted when a failure occurs.
 
 PooledConnection Usage
 ----------------------
