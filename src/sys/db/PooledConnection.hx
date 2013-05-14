@@ -8,33 +8,39 @@
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ****/
 
-
-
-
-
-
-
 package sys.db;
 
 #if neko
 import neko.vm.Mutex;
+import neko.vm.Tls;
 #elseif cpp
 import cpp.vm.Mutex;
+import neko.vm.Tls;
 #end
 
 typedef ConnectionWrapper = {
+	index:Int,
 	ready:Bool,
 	conn:Connection
+}
+
+enum Transaction {
+	START;
+	COMMIT;
+	ROLLBACK;
 }
 
 /**
  * A thread-safe abstraction layer for accessing databases. Connections are pooled and automatically restarted when a failure occurs.
  * Requests made during a failure will be automagically retried. Set maxRetries to 0 to handle failures manually.
+ * If using a transaction you must either commit or rollback on the same thread.
  * 
  * @author Sam MacPherson
  */
 
 class PooledConnection implements Connection {
+	
+	static var reserved:Tls<Int> = new Tls<Int>();	//Used to persist the same connection through an entire transaction
 	
 	var conns:Array<ConnectionWrapper>;
 	var createNewConnection:Void->Connection;
@@ -52,7 +58,7 @@ class PooledConnection implements Connection {
 		closed = false;
 		
 		for (i in 0 ... poolSize) {
-			var connWrapper = { ready:true, conn:null };
+			var connWrapper = { index:i, ready:true, conn:null };
 			expRetry(function ():Void { try { connWrapper.conn = createNewConnection(); } catch (e:Dynamic) { connWrapper.conn.close(); throw e; } } );
 			untyped connWrapper.conn.__wrapper = connWrapper;
 			conns.push(connWrapper);
@@ -76,6 +82,9 @@ class PooledConnection implements Connection {
 	}
 	
 	function getAvailableConnection ():Connection {
+		//If reserved is set then we will return the connection that is reserved
+		if (reserved.value != null) return conns[reserved.value].conn;
+		
 		var conn:Connection = null;
 		lock.acquire();
 		while (conn == null) {
@@ -118,6 +127,7 @@ class PooledConnection implements Connection {
 		var conn:Connection = null;
 		try {
 			conn = createNewConnection();
+			untyped conn.__wrapper = connWrapper;
 		} catch (e:Dynamic) {
 			conn.close();
 			throw e;
@@ -127,7 +137,7 @@ class PooledConnection implements Connection {
 		return conn;
 	}
 	
-	function doQuery (method:String, args:Array<Dynamic>):Dynamic {
+	function doQuery (method:String, args:Array<Dynamic>, ?transaction:Transaction):Dynamic {
 		var conn = getAvailableConnection();
 		var result:Dynamic;
 		expRetry(function ():Void {
@@ -138,7 +148,16 @@ class PooledConnection implements Connection {
 				throw e;
 			}
 		});
-		releaseConnection(conn);
+		if (transaction != null) {
+			switch (transaction) {
+				case START: 
+					//We are starting a transaction so reserve this connection until the thread commits or rollsback
+					reserved.value = untyped conn.__wrapper.index;
+				case COMMIT, ROLLBACK:
+					reserved = null;
+			}
+		}
+		if (reserved.value == null) releaseConnection(conn);	//Only release when we are done
 		return result;
 	}
 	
@@ -200,19 +219,19 @@ class PooledConnection implements Connection {
 	public function startTransaction ():Void {
 		if (closed) throw "Already closed";
 		
-		return doQuery("startTransaction", []);
+		return doQuery("startTransaction", [], START);
 	}
 	
 	public function commit ():Void {
 		if (closed) throw "Already closed";
 		
-		return doQuery("commit", []);
+		return doQuery("commit", [], COMMIT);
 	}
 	
 	public function rollback ():Void {
 		if (closed) throw "Already closed";
 		
-		return doQuery("rollback", []);
+		return doQuery("rollback", [], ROLLBACK);
 	}
 	
 }
