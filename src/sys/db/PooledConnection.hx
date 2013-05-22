@@ -8,8 +8,6 @@
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ****/
 
-
-
 package sys.db;
 
 #if neko
@@ -144,12 +142,13 @@ class PooledConnection implements Connection {
 	
 	function doQuery (method:String, args:Array<Dynamic>, ?transaction:Transaction):Dynamic {
 		var conn = getAvailableConnection();
-		var result:Dynamic;
+		var result:Dynamic = null;
+		var exception:Dynamic = null;
 		try {
 			result = Reflect.callMethod(conn, Reflect.field(conn, method), args);
 		} catch (e:Dynamic) {
 			expRetry(function ():Void { try { conn = renewConnection(conn); } catch (e:Dynamic) { conn.close(); throw e; } } );
-			throw e;
+			exception = e;		//Need to release connections so throw exception later
 		}
 		if (transaction != null) {
 			switch (transaction) {
@@ -157,10 +156,11 @@ class PooledConnection implements Connection {
 					//We are starting a transaction so reserve this connection until the thread commits or rollsback
 					reserved.value = untyped conn.__wrapper.index;
 				case COMMIT, ROLLBACK:
-					reserved = null;
+					reserved.value = null;
 			}
 		}
 		if (reserved.value == null) releaseConnection(conn);	//Only release when we are done
+		if (exception != null) throw exception;
 		return result;
 	}
 	
