@@ -42,12 +42,12 @@ Extras
 PooledConnection Usage
 ----------------------
 
-Usage is very simple. Instead of creating your Mysql.connect() or Sqlite.read() connections just create a new PooledConnection and pass in a factory constructor as shown below:
+Usage is very simple. Instead of creating your sys.db.Mysql.connect() or sys.db.Sqlite.read() connections just create a new PooledConnection and pass in a factory constructor as shown below:
 	
 	//Create a pooled connection
-	var cnx = new sys.db.PooledConnection(function ():Connection {
-		return Mysql.connect( { host:HOST, port:ORT, user:USER, pass:PASS, socket:null, database:DATABASE } );
-	}, POOLED_CONNECTIONS);
+	var cnx = new sys.db.PooledConnection(function ():sys.db.Connection {
+		return sys.db.Mysql.connect( { host:HOST, port:PORT, user:USER, pass:PASS, socket:null, database:DATABASE } );
+	}, NUM_CONNECTIONS);
 	
 	//Use with SPOD!
 	//A point of caution - SPOD uses a global object cache by default so you will need to deal with this when using in a multithreaded application
