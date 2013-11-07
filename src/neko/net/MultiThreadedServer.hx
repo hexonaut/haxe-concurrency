@@ -142,7 +142,7 @@ class MultiThreadedServer < Client, Message > {
 					//Otherwise this is regular socket read from client
 					//Remove client from list so we dont keep adding read work for the same client
 					clients.remove(i);
-					doIoWork(callback(ioRead, i));
+					doIoWork(ioRead.bind(i));
 				}
 			}
 			//for (i in readySocks.write) {
@@ -164,7 +164,7 @@ class MultiThreadedServer < Client, Message > {
 						if (!cl.disconnecting) {
 							//Set socket client disconnecting attribute to true to mark the user as disconnecting
 							cl.disconnecting = true;
-							doApplicationWork(msg.s, callback(clientDisconnected, cl.data));
+							doApplicationWork(msg.s, clientDisconnected.bind(cl.data));
 							clients.remove(msg.s);
 							try {
 								msg.s.close();
@@ -208,7 +208,7 @@ class MultiThreadedServer < Client, Message > {
 				cl.bufbytes -= m.bytes;
 				
 				//Send client message
-				doApplicationWork(sock, callback(doClientMessage, cl, m.msg));
+				doApplicationWork(sock, doClientMessage.bind(cl, m.msg));
 			}
 			if (pos > 0) cl.buf.blit(0, cl.buf, pos, cl.bufbytes);
 			
@@ -285,7 +285,7 @@ class MultiThreadedServer < Client, Message > {
 	}
 	
 	public function write (sock:Socket, msg:String):Void {
-		doIoWork(callback(ioWrite, sock, msg));
+		doIoWork(ioWrite.bind(sock, msg));
 	}
 	
 	/**
