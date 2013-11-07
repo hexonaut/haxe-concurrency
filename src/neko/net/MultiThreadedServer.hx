@@ -12,6 +12,7 @@ package neko.net;
 
 import haxe.io.Bytes;
 import haxe.io.Eof;
+import haxe.io.Error;
 import sys.net.Host;
 import sys.net.Socket;
 
@@ -213,6 +214,9 @@ class MultiThreadedServer < Client, Message > {
 			
 			//We have read the socket data -- notify main thread that client is ready to accept more
 			mainThread.sendMessage({a:ACTION_READY, s:sock});
+		} catch (e:Error) {
+			mainThread.sendMessage({a:ACTION_READY, s:sock});
+			disconnectClient(cl.sock);
 		} catch (e:Dynamic) {
 			if (!Std.is(e, Eof)) doException(e);
 			mainThread.sendMessage({a:ACTION_READY, s:sock});
