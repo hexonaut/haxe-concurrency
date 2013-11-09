@@ -1,0 +1,13 @@
+{
+  "name": "concurrency",
+  "license": "MIT",
+  "tags": ["neko"],
+  "description": "Implements several concurrent data structures as well as a thread server with threaded application logic.",
+  "contributors": ["Blank101"],
+  "releasenote": "Initial release.",
+  "version": "1.0.0",
+  "url": "https://github.com/Blank101/haxe-concurrency",
+  "dependencies": {
+    
+  }
+}

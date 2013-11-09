@@ -2,7 +2,7 @@ package ;
 
 import haxe.ds.ConcurrentMap;
 import haxe.ds.CopyOnWriteArray;
-import neko.net.MultiThreadedServer;
+import neko.net.AppThreadServer;
 import sys.db.PooledConnection;
 
 /**

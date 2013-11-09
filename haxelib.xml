@@ -1,6 +1,0 @@
-<project name="concurrency" url="https://github.com/Blank101/haxe-concurrency" license="MIT">
-	<user name="Blank101"/>
-    <tag v="neko"/>
-	<description>Implements several concurrent data structures as well as a fully multithreaded server.</description>
-	<version name="0.1">Initial</version>
-</project>

@@ -43,7 +43,7 @@ private typedef ClientData<Client> = {
 	disconnecting:Bool
 };
 
-class MultiThreadedServer < Client, Message > {
+class AppThreadServer<Client, Message> {
 	
 	static inline var ACTION_DISCONNECT:Int = 0;
 	static inline var ACTION_READY:Int = 1;
