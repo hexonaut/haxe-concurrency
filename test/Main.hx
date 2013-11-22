@@ -9,8 +9,10 @@ class Main {
 		trace("Starting");
 		var t = Thread.create(test);
 		while (true) {
+			#if cad
 			trace(Thread.current().name + ": " + Thread.current().state);
 			trace(t.name + ": " + t.state);
+			#end
 			Sys.sleep(1);
 		}
 	}

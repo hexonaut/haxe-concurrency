@@ -10,53 +10,57 @@
 
 package cad;
 
-import haxe.concurrency.ConcurrentIntHash;
-import haxe.Json;
-import sys.net.Host;
-import sys.net.Socket;
+#if macro
+import haxe.macro.Context;
+import haxe.macro.Expr;
+#else
+import cad.Thread;
+#if neko
+typedef SysDeque<T> = neko.vm.Deque<T>;
+#elseif cpp
+typedef SysDeque<T> = cpp.vm.Deque<T>;
+#else
+"Not supported on this platform.";
+#end
+#end
 
 /**
- * The Concurrent Application Debugger will start a daemon thread to listen on a port
- * and produce JSON output of what the system is currently doing. You need to compile
- * with the '-D cad' flag turned on.
+ * Provides additional debugger information.
  * 
  * @author Sam MacPherson
  */
-class Debugger {
-	
-	#if cad
-	var s:Socket;
-	
-	function new (host:Host, port:Int) {
-		s = new Socket();
-		s.bind(host, port);
-		s.listen(1);
+#if cad
+class Deque<T> {
+
+	#if !macro
+	var d:SysDeque<T>;
+
+	public function new () {
+		d = new SysDeque<T>();
 	}
 	
-	function buildState ():Dynamic {
-		var state = new Array<Dynamic>();
-		var threads:ConcurrentIntHash<Thread> = Reflect.field(Thread, "THREADS");
-		for (i in threads) {
-			state.push( { name:i.name, state:i.state } );
-		}
-		return state;
+	public function add (i:T):Void {
+		d.add(i);
 	}
 	
-	function run ():Void {
-		while (true) {
-			var sock = s.accept();
-			s.write(Json.stringify(buildState()));
-			s.close();
-		}
+	public function _pop (block:Bool, ?line:String = ""):T {
+		Thread.current().state = Waiting(line);
+		var result = d.pop(block);
+		Thread.current().state = Running;
+		return result;
+	}
+	
+	public function push (i:T):Void {
+		d.push(i);
 	}
 	#end
 	
-	public static function listen (host:Host, port:Int):Void {
-		#if cad
-		var d = new Debugger(host, port);
-		var t = Thread.create(d.run);
-		t.name = "cad-daemon";
-		#end
+	@:macro public function pop (ethis:Expr, block:Expr):Expr {
+		var pos = Context.currentPos();
+		return { expr:ECall({ expr:EField(ethis, "_pop"), pos:pos }, [block, { expr:EConst(CString(Std.string(pos))), pos:pos }]), pos:pos };
 	}
 	
 }
+#else
+typedef Deque<T> = SysDeque<T>;
+#end
