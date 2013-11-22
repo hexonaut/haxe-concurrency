@@ -13,90 +13,43 @@ package haxe.concurrency;
 import cad.Mutex;
 
 /**
- * A simple wrapper for using the Hash. Access is thread safe.
+ * A wrapper for an integer which is thread safe.
  * 
  * @author Sam MacPherson
  */
-
-class ConcurrentHash<T> {
+class AtomicInteger {
 	
 	var lock:Mutex;
-	var hash:Hash<T>;
+	var val:Int;
 
-	public function new () {
+	public function new (?val:Int = 0) {
 		lock = new Mutex();
-		hash = new Hash<T>();
+		this.val = val;
 	}
 	
-	public inline function exists (key:String):Bool {
+	public function get ():Int {
 		lock.acquire();
-		var result = hash.exists(key);
+		var result = val;
 		lock.release();
 		return result;
 	}
 	
-	public inline function get (key:String):Null<T> {
+	public function set (val:Int):Void {
 		lock.acquire();
-		var result = hash.get(key);
+		this.val = val;
+		lock.release();
+	}
+	
+	public function incrementAndGet ():Int {
+		lock.acquire();
+		var result = ++val;
 		lock.release();
 		return result;
 	}
 	
-	public inline function iterator ():Iterator<T> {
-		var arr = new Array<T>();
+	public function getAndIncrement ():Int {
 		lock.acquire();
-		for (i in hash.iterator()) {
-			arr.push(i);
-		}
-		lock.release();
-		return arr.iterator();
-	}
-	
-	public inline function keys ():Iterator<String> {
-		var arr = new Array<String>();
-		lock.acquire();
-		for (i in hash.keys()) {
-			arr.push(i);
-		}
-		lock.release();
-		return arr.iterator();
-	}
-	
-	public inline function remove (key:String):Bool {
-		lock.acquire();
-		var result = hash.remove(key);
-		lock.release();
-		return result;
-	}
-	
-	public inline function set (key:String, val:T):Void {
-		lock.acquire();
-		hash.set(key, val);
-		lock.release();
-	}
-	
-	public inline function toString ():String {
-		lock.acquire();
-		var result = hash.toString();
-		lock.release();
-		return result;
-	}
-	
-	public inline function setIfNotExists (key:String, val:T):T {
-		lock.acquire();
-		var oldval = hash.get(key);
-		if (oldval == null) {
-			hash.set(key, val);
-			oldval = val;
-		}
-		lock.release();
-		return oldval;
-	}
-	
-	public inline function getAndRemove (key:String):Null<T> {
-		lock.acquire();
-		var result = hash.get(key);
-		hash.remove(key);
+		var result = val++;
 		lock.release();
 		return result;
 	}

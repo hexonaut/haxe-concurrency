@@ -10,11 +10,7 @@
 
 package haxe.concurrency;
 
-#if neko
-import neko.vm.Mutex;
-#elseif cpp
-import cpp.vm.Mutex;
-#end
+import cad.Mutex;
 
 /**
  * A simple wrapper for using the IntHash. Access is thread safe.

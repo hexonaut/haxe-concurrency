@@ -10,11 +10,7 @@
 
 package haxe.concurrency;
 
-#if neko
-import neko.vm.Mutex;
-#elseif cpp
-import cpp.vm.Mutex;
-#end
+import cad.Mutex;
 
 /**
  * A thread safe array. The array is copied completely during a write. Useful for read-heavy usage.
