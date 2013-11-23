@@ -10,6 +10,7 @@
 
 package cad;
 
+import cad.Thread;
 import haxe.concurrency.ConcurrentIntHash;
 import haxe.Json;
 import sys.net.Host;
@@ -26,34 +27,78 @@ class Debugger {
 	
 	#if cad
 	var s:Socket;
+	var prettyOutput:Bool;
 	
-	function new (host:Host, port:Int) {
+	function new (host:Host, port:Int, prettyOutput:Bool) {
+		this.prettyOutput = prettyOutput;
 		s = new Socket();
 		s.bind(host, port);
 		s.listen(1);
 	}
 	
-	function buildState ():Dynamic {
+	function buildJSON ():String {
 		var state = new Array<Dynamic>();
 		var threads:ConcurrentIntHash<Thread> = Reflect.field(Thread, "THREADS");
 		for (i in threads) {
-			state.push( { name:i.name, state:i.state } );
+			state.push( { name:i.name, state:Std.string(i.state) } );
 		}
-		return state;
+		return Json.stringify(state);
+	}
+	
+	function buildHTML ():String {
+		var state = "<html><head><title>Concurrent Application Debugger</title><style>table { width: 100%; text-align: left; border-spacing: 0px; } table td, table th { padding: 8px; vertical-align: top; border-top: 1px solid #ddd; } table thead tr th { border-bottom: 2px solid #ddd; border-top: none; } .wait, .sleep { color: gray; } .run { color: green; } .term { color: red; }</style></head><body><table><thead><tr><th>Name</th><th>State</th><th>Location</th></tr></thead><tbody>";
+		var threads:ConcurrentIntHash<Thread> = Reflect.field(Thread, "THREADS");
+		for (i in threads) {
+			var location = "";
+			var tstate = "";
+			var cls = "";
+			switch (i.state) {
+				case Waiting(line):
+					tstate = "Waiting";
+					location = line;
+					cls = "wait";
+				case Sleeping:
+					tstate = "Sleeping";
+					cls = "sleep";
+				case Running:
+					tstate = "Running";
+					cls = "run";
+				case Terminated:
+					tstate = "Terminated";
+					cls = "term";
+			}
+			state += "<tr class='" + cls + "'><td>" + i.name + "</td><td>" + tstate + "</td><td>" + location + "</td></tr>";
+		}
+		return state + "</tbody></table></body></html>";
 	}
 	
 	function run ():Void {
 		while (true) {
 			var sock = s.accept();
-			s.write(Json.stringify(buildState()));
-			s.close();
+			var line:String = null;
+			do {
+				try {
+					line = sock.input.readLine();
+				} catch (e:Dynamic) {
+					break;
+				}
+			} while (line != "");
+			sock.write(prettyOutput ? buildHTML() : buildJSON());
+			sock.close();
 		}
 	}
 	#end
 	
-	public static function listen (host:Host, port:Int):Void {
+	/**
+	 * Start listening on the given host:port combination. By default JSON will be output.
+	 * 
+	 * @param host The host to listen on.
+	 * @param port The port to listen on.
+	 * @param ?prettyOutput If true then a full HTML display will be made.
+	 */
+	public static function listen (host:Host, port:Int, ?prettyOutput:Bool = false):Void {
 		#if cad
-		var d = new Debugger(host, port);
+		var d = new Debugger(host, port, prettyOutput);
 		var t = Thread.create(d.run);
 		t.name = "cad-daemon";
 		#end

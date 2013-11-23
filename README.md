@@ -52,3 +52,16 @@ Usage is very simple. Instead of creating your sys.db.Mysql.connect() or sys.db.
 	//Use with SPOD!
 	//A point of caution - SPOD uses a global object cache by default so you will need to deal with this when using in a multithreaded application
 	sys.db.Manager.cnx = cnx;
+
+Concurrent Application Debugger
+===============================
+
+You can use the Concurrent Application Debugger (CAD) to debug concurrent applications. Included in the cad package is cad.Debugger which will listen on a port you choose and output the current state of all threads within the application. Two formats are available: Full HTML and JSON. The HTML output is nice if you want a quick/pretty display from a browser. The JSON output is nicer for custom clients.
+
+Here is an example:
+
+	cad.Debugger.listen(new sys.net.Host("0.0.0.0"), 9308, true);	//Last arg means use HTML output
+
+To opt-in you need to make sure all Mutex/Locks/Deques are using the wrapper classes of cad.Mutex, cad.Lock, cad.Deque. This is the only modification required to your existing code base. You then compile your code with the '-D cad' compiler flag to turn on CAD.
+
+The nice thing about this is that when you are done and don't want the overhead of CAD anymore you can just remove the compiler flag, and cad.* typedefs to the std classes. Also the Debugger will just ignore the listen() call.

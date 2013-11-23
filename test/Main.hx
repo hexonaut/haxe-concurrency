@@ -1,11 +1,15 @@
 package ;
 
+import cad.Debugger;
 import cad.Lock;
 import cad.Thread;
+import neko.net.Host;
 
 class Main {
 
 	public static function main ():Void {
+		Debugger.listen(new Host("localhost"), 9308);
+		
 		trace("Starting");
 		var t = Thread.create(test);
 		while (true) {
