@@ -10,21 +10,14 @@
 
 package neko.net;
 
+import cad.Lock;
+import cad.Mutex;
+import cad.Thread;
 import haxe.io.Bytes;
 import haxe.io.Eof;
 import haxe.io.Error;
 import sys.net.Host;
 import sys.net.Socket;
-
-#if neko
-import neko.vm.Lock;
-import neko.vm.Mutex;
-import neko.vm.Thread;
-#elseif cpp
-import cpp.vm.Lock;
-import cpp.vm.Mutex;
-import cpp.vm.Thread;
-#end
 
 /**
  * An x worker thread, y io thread multithreaded server for server applications with neko.
@@ -106,10 +99,10 @@ class AppThreadServer<Client, Message> {
 		clients.push(serv);
 		timer = Thread.create(runTimer);
 		for (i in 0 ... numIoThreads) {
-			ioThreads.push(Thread.create(runWorker));
+			ioThreads.push(Thread.create(runWorker.bind("ioworker-")));
 		}
 		for (i in 0 ... numWorkerThreads) {
-			workerThreads.push(Thread.create(runWorker));
+			workerThreads.push(Thread.create(runWorker.bind("appworker-")));
 		}
 		
 		while (running) {
@@ -249,7 +242,13 @@ class AppThreadServer<Client, Message> {
 		workerThreads[untyped sock.__client.workerId].sendMessage(f);
 	}
 	
-	function runWorker ():Void {
+	function runWorker (prefix:String):Void {
+		#if cad
+		//Name the threads if we are using the debugger
+		var t = Thread.current();
+		t.name = prefix + t.id;
+		#end
+		
 		//For both io and application workers
 		while (running) {
 			var f:Void->Void = Thread.readMessage(true);
@@ -262,6 +261,11 @@ class AppThreadServer<Client, Message> {
 	}
 	
 	function runTimer ():Void {
+		#if cad
+		//Name the thread if we are using the debugger
+		Thread.current().name = "update";
+		#end
+		
 		var l = new Lock();
 		while (running) {
 			l.wait(timerDelay);

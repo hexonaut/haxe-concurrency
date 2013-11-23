@@ -1,35 +1,35 @@
 package ;
 
-import haxe.ds.ConcurrentMap;
-import haxe.ds.CopyOnWriteArray;
+import cad.Debugger;
+import cad.Lock;
+import cad.Thread;
 import neko.net.AppThreadServer;
-import sys.db.PooledConnection;
+import sys.net.Host;
 
-/**
- * Testing for haxe-concurrency.
- * 
- * @author Sam MacPherson
- */
 class Main {
 
-	public static function main () {
-		var map = new ConcurrentMap<Int, Dynamic>();
-		map.set(1, 1);
-		map.set(2, "test");
-		map.set(3, 3);
-		trace(map[1]);
-		trace(map[2]);
-		trace(map.get(3));
+	public static function main ():Void {
+		Debugger.listen(new Host("localhost"), 9308);
 		
-		for (i in map) {
-			trace(i);
+		trace("Starting");
+		var t = Thread.create(test);
+		while (true) {
+			#if cad
+			trace(Thread.current().name + ": " + Thread.current().state);
+			trace(t.name + ": " + t.state);
+			#end
+			Sys.sleep(1);
 		}
-		
-		var arr = new CopyOnWriteArray<String>();
-		arr.push("1");
-		arr.push("2");
-		arr.push("3");
-		trace(arr);
+	}
+	
+	static function test ():Void {
+		var l = new Lock();
+		#if cad
+		Thread.current().name = "test-thread";
+		#end
+		trace("test");
+		Sys.sleep(3);
+		l.wait(3);
 	}
 	
 }

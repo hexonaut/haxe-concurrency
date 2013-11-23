@@ -12,11 +12,10 @@
 
 package sys.db;
 
+import cad.Mutex;
 #if neko
-import neko.vm.Mutex;
 import neko.vm.Tls;
 #elseif cpp
-import cpp.vm.Mutex;
 import neko.vm.Tls;
 #end
 
