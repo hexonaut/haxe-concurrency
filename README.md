@@ -62,6 +62,8 @@ Here is an example:
 
 	cad.Debugger.listen(new sys.net.Host("0.0.0.0"), 9308, true);	//Last arg means use HTML output
 
+![CAD](https://raw.github.com/Blank101/haxe-concurrency/master/example.jpg "Concurrent Application Debugger - HTML Output")
+
 To opt-in you need to make sure all Mutex/Locks/Deques are using the wrapper classes of cad.Mutex, cad.Lock, cad.Deque. This is the only modification required to your existing code base. You then compile your code with the '-D cad' compiler flag to turn on CAD.
 
 The nice thing about this is that when you are done and don't want the overhead of CAD anymore you can just remove the compiler flag, and cad.* typedefs to the std classes. Also the Debugger will just ignore the listen() call.
