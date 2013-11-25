@@ -3,7 +3,6 @@ package ;
 import cad.Debugger;
 import cad.Lock;
 import cad.Thread;
-import neko.net.AppThreadServer;
 import sys.net.Host;
 
 class Main {
@@ -30,6 +29,7 @@ class Main {
 		trace("test");
 		Sys.sleep(3);
 		l.wait(3);
+		throw "asdf";
 	}
 	
 }

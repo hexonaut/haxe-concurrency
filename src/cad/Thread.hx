@@ -10,12 +10,10 @@
 
 package cad;
 
-#if macro
-import haxe.macro.Context;
-import haxe.macro.Expr;
-#else
 import haxe.concurrent.AtomicInteger;
 import haxe.concurrent.ConcurrentMap;
+import haxe.CallStack;
+import sys.net.Socket;
 #if neko
 import neko.vm.Tls;
 typedef SysThread = neko.vm.Thread;
@@ -24,7 +22,6 @@ import cpp.vm.Tls;
 typedef SysThread = cpp.vm.Thread;
 #else
 "Not supported on this platform.";
-#end
 #end
 
 /**
@@ -35,21 +32,22 @@ typedef SysThread = cpp.vm.Thread;
 #if cad
 enum ThreadState {
 	Running;
-	Waiting(line:String);
+	Waiting;
 	Sleeping;
 	Terminated;
+	Exception(error:Dynamic);
 }
 
 class Thread {
 	
-	#if !macro
 	static var ID:AtomicInteger;
 	static var THREADS:ConcurrentMap<Int, Thread>;
 	static var CURRENT:Tls<Thread>;
 	
 	public var id(default, null):Int;
 	public var name:String;
-	public var state:ThreadState;
+	public var state(default, null):ThreadState;
+	public var stack(default, null):Null<Array<StackItem>>;
 	
 	var t:SysThread;
 
@@ -63,8 +61,12 @@ class Thread {
 	
 	function threadStart (callb:Void->Void):Void {
 		CURRENT.value = this;
-		callb();
-		state = Terminated;
+		try {
+			callb();
+			setState(Terminated);
+		} catch (e:Dynamic) {
+			setState(Exception(e));
+		}
 	}
 	
 	public function sendMessage (msg:Dynamic):Void {
@@ -79,11 +81,27 @@ class Thread {
 		return new Thread(callb);
 	}
 	
-	public static function _readMessage (block:Bool, ?line:String = ""):Dynamic {
-		current().state = Waiting(line);
+	public static function readMessage (block:Bool):Dynamic {
+		setState(Waiting);
 		var msg = SysThread.readMessage(block);
-		current().state = Running;
+		setState(Running);
 		return msg;
+	}
+	
+	public static function setState (state:ThreadState):Void {
+		var t = current();
+		switch (state) {
+			case Waiting, Sleeping:
+				t.stack = CallStack.callStack();
+				//Drop all the extra callstack info from CAD -- the calling location is what's important
+				t.stack.shift();
+				t.stack.shift();
+			case Exception(e):
+				t.stack = CallStack.exceptionStack();
+			case Running, Terminated:
+				t.stack = null;
+		}
+		t.state = state;
 	}
 	
 	public static function __init__ ():Void {
@@ -91,14 +109,24 @@ class Thread {
 		THREADS = new ConcurrentMap<Int, Thread>();
 		CURRENT = new Tls<Thread>();
 		
-		//Override default sleep method to include debugger info
+		//Override default Sys.sleep method to include debugger info
 		var _sleep = Sys.sleep;
 		var sleep = function (seconds:Float):Void {
-			Thread.current().state = Sleeping;
+			setState(Sleeping);
 			_sleep(seconds);
-			Thread.current().state = Running;
+			setState(Running);
 		}
 		Reflect.setField(Sys, "sleep", sleep);
+		
+		//Override default Socket.select method to include debugger info
+		var _select = Socket.select;
+		var select = function (read:Array<Socket>, write:Array<Socket>, others:Array<Socket>, ?timeout:Float):{ read:Array<Socket>, write:Array<Socket>, others:Array<Socket> } {
+			setState(Waiting);
+			var result = _select(read, write, others, timeout);
+			setState(Running);
+			return result;
+		}
+		Reflect.setField(Socket, "select", select);
 		
 		//Wrap main thread
 		var mainThread = Type.createEmptyInstance(Thread);
@@ -108,12 +136,6 @@ class Thread {
 		mainThread.name = "main";
 		mainThread.state = Running;
 		THREADS.set(mainThread.id, mainThread);
-	}
-	#end
-	
-	macro public static function readMessage (block:ExprOf<Bool>):ExprOf<Dynamic> {
-		var pos = Context.currentPos();
-		return { expr:ECall({ expr:EField({ expr:EField({ expr:EConst(CIdent("cad")), pos:pos }, "Thread"), pos:pos }, "_readMessage"), pos:pos }, [block, { expr:EConst(CString(Std.string(pos))), pos:pos }]), pos:pos };
 	}
 	
 }

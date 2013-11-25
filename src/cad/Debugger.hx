@@ -12,9 +12,12 @@ package cad;
 
 import cad.Thread;
 import haxe.concurrent.ConcurrentMap;
+import haxe.CallStack;
 import haxe.Json;
 import sys.net.Host;
 import sys.net.Socket;
+
+using StringTools;
 
 /**
  * The Concurrent Application Debugger will start a daemon thread to listen on a port
@@ -40,22 +43,28 @@ class Debugger {
 		var state = new Array<Dynamic>();
 		var threads:ConcurrentMap<Int, Thread> = Reflect.field(Thread, "THREADS");
 		for (i in threads) {
-			state.push( { name:i.name, state:Std.string(i.state) } );
+			var prefix = switch (i.state) {
+				case Exception(e): "\n" + e;
+				default: "";
+			}
+			state.push( { name:i.name, state:Std.string(i.state), stack:prefix + CallStack.toString(i.stack) } );
 		}
 		return Json.stringify(state);
 	}
 	
 	function buildHTML ():String {
-		var state = "<html><head><title>Concurrent Application Debugger</title><style>table { width: 100%; text-align: left; border-spacing: 0px; } table td, table th { padding: 8px; vertical-align: top; border-top: 1px solid #ddd; } table thead tr th { border-bottom: 2px solid #ddd; border-top: none; } .wait, .sleep { color: gray; } .run { color: green; } .term { color: red; }</style></head><body><table><thead><tr><th>Name</th><th>State</th><th>Location</th></tr></thead><tbody>";
+		var state = "<html><head><title>Concurrent Application Debugger</title><style>table { width: 100%; text-align: left; border-spacing: 0px; } table td, table th { padding: 8px; vertical-align: top; border-top: 1px solid #ddd; } table thead tr th { border-bottom: 2px solid #ddd; border-top: none; } .wait, .sleep { color: gray; } .run { color: green; } .term, .exception { color: red; }</style></head><body><table><thead><tr><th>Name</th><th>State</th><th>Stack</th></tr></thead><tbody>";
 		var threads:ConcurrentMap<Int, Thread> = Reflect.field(Thread, "THREADS");
 		for (i in threads) {
 			var location = "";
+			if (i.stack != null) {
+				location = CallStack.toString(i.stack).substr(1).replace("\n", "<br>");
+			}
 			var tstate = "";
 			var cls = "";
 			switch (i.state) {
-				case Waiting(line):
+				case Waiting:
 					tstate = "Waiting";
-					location = line;
 					cls = "wait";
 				case Sleeping:
 					tstate = "Sleeping";
@@ -66,6 +75,10 @@ class Debugger {
 				case Terminated:
 					tstate = "Terminated";
 					cls = "term";
+				case Exception(e):
+					tstate = "Exception";
+					cls = "exception";
+					location = Std.string(e) + "<br>" + location;
 			}
 			state += "<tr class='" + cls + "'><td>" + i.name + "</td><td>" + tstate + "</td><td>" + location + "</td></tr>";
 		}
