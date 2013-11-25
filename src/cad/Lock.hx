@@ -10,10 +10,6 @@
 
 package cad;
 
-#if macro
-import haxe.macro.Context;
-import haxe.macro.Expr;
-#else
 import cad.Thread;
 #if neko
 typedef SysLock = neko.vm.Lock;
@@ -21,7 +17,6 @@ typedef SysLock = neko.vm.Lock;
 typedef SysLock = cpp.vm.Lock;
 #else
 "Not supported on this platform.";
-#end
 #end
 
 /**
@@ -32,7 +27,6 @@ typedef SysLock = cpp.vm.Lock;
 #if cad
 class Lock {
 
-	#if !macro
 	var l:SysLock;
 
 	public function new () {
@@ -43,17 +37,11 @@ class Lock {
 		l.release();
 	}
 	
-	public function _wait (timeout:Float, ?line:String = ""):Bool {
-		Thread.current().state = Waiting(line);
+	public function wait (timeout:Float):Bool {
+		Thread.setState(Waiting);
 		var result = l.wait(timeout);
-		Thread.current().state = Running;
+		Thread.setState(Running);
 		return result;
-	}
-	#end
-	
-	@:macro public function wait (ethis:Expr, timeout:Expr):Expr {
-		var pos = Context.currentPos();
-		return { expr:ECall({ expr:EField(ethis, "_wait"), pos:pos }, [timeout, { expr:EConst(CString(Std.string(pos))), pos:pos }]), pos:pos };
 	}
 	
 }

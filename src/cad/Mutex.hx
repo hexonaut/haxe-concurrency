@@ -10,10 +10,6 @@
 
 package cad;
 
-#if macro
-import haxe.macro.Context;
-import haxe.macro.Expr;
-#else
 import cad.Thread;
 #if neko
 typedef SysMutex = neko.vm.Mutex;
@@ -21,7 +17,6 @@ typedef SysMutex = neko.vm.Mutex;
 typedef SysMutex = cpp.vm.Mutex;
 #else
 "Not supported on this platform.";
-#end
 #end
 
 /**
@@ -32,17 +27,16 @@ typedef SysMutex = cpp.vm.Mutex;
 #if cad
 class Mutex {
 	
-	#if !macro
 	var m:SysMutex;
 
 	public function new () {
 		m = new SysMutex();
 	}
 	
-	public function _acquire (?line:String = ""):Void {
-		Thread.current().state = Waiting(line);
+	public function acquire ():Void {
+		Thread.setState(Waiting);
 		m.acquire();
-		Thread.current().state = Running;
+		Thread.setState(Running);
 	}
 	
 	public function release ():Void {
@@ -51,12 +45,6 @@ class Mutex {
 	
 	public function tryAcquire ():Bool {
 		return m.tryAcquire();
-	}
-	#end
-	
-	@:macro public function acquire (ethis:Expr):Expr {
-		var pos = Context.currentPos();
-		return { expr:ECall({ expr:EField(ethis, "_acquire"), pos:pos }, [{ expr:EConst(CString(Std.string(pos))), pos:pos }]), pos:pos };
 	}
 	
 }

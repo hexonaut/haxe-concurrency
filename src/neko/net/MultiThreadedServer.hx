@@ -99,10 +99,10 @@ class MultiThreadedServer < Client, Message > {
 		clients.push(serv);
 		timer = Thread.create(runTimer);
 		for (i in 0 ... numIoThreads) {
-			ioThreads.push(Thread.create(callback(runWorker, "ioworker-")));
+			ioThreads.push(Thread.create(callback(runWorker, "ioworker-" + i)));
 		}
 		for (i in 0 ... numWorkerThreads) {
-			workerThreads.push(Thread.create(callback(runWorker, "appworker-")));
+			workerThreads.push(Thread.create(callback(runWorker, "appworker-" + i)));
 		}
 		
 		while (running) {
@@ -242,11 +242,11 @@ class MultiThreadedServer < Client, Message > {
 		workerThreads[untyped sock.__client.workerId].sendMessage(f);
 	}
 	
-	function runWorker (prefix:String):Void {
+	function runWorker (name:String):Void {
 		#if cad
 		//Name the threads if we are using the debugger
 		var t = Thread.current();
-		t.name = prefix + t.id;
+		t.name = name;
 		#end
 		
 		//For both io and application workers

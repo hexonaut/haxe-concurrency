@@ -3,12 +3,12 @@ package ;
 import cad.Debugger;
 import cad.Lock;
 import cad.Thread;
-import neko.net.Host;
+import sys.net.Host;
 
 class Main {
 
 	public static function main ():Void {
-		Debugger.listen(new Host("localhost"), 9308);
+		Debugger.listen(new Host("localhost"), 9308, true);
 		
 		trace("Starting");
 		var t = Thread.create(test);
@@ -29,6 +29,7 @@ class Main {
 		trace("test");
 		Sys.sleep(3);
 		l.wait(3);
+		throw "asdf";
 	}
 	
 }

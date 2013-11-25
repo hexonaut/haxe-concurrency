@@ -10,10 +10,6 @@
 
 package cad;
 
-#if macro
-import haxe.macro.Context;
-import haxe.macro.Expr;
-#else
 import cad.Thread;
 #if neko
 typedef SysDeque<T> = neko.vm.Deque<T>;
@@ -21,7 +17,6 @@ typedef SysDeque<T> = neko.vm.Deque<T>;
 typedef SysDeque<T> = cpp.vm.Deque<T>;
 #else
 "Not supported on this platform.";
-#end
 #end
 
 /**
@@ -32,7 +27,6 @@ typedef SysDeque<T> = cpp.vm.Deque<T>;
 #if cad
 class Deque<T> {
 
-	#if !macro
 	var d:SysDeque<T>;
 
 	public function new () {
@@ -43,21 +37,15 @@ class Deque<T> {
 		d.add(i);
 	}
 	
-	public function _pop (block:Bool, ?line:String = ""):T {
-		Thread.current().state = Waiting(line);
+	public function pop (block:Bool):T {
+		Thread.setState(Waiting);
 		var result = d.pop(block);
-		Thread.current().state = Running;
+		Thread.setState(Running);
 		return result;
 	}
 	
 	public function push (i:T):Void {
 		d.push(i);
-	}
-	#end
-	
-	@:macro public function pop (ethis:Expr, block:Expr):Expr {
-		var pos = Context.currentPos();
-		return { expr:ECall({ expr:EField(ethis, "_pop"), pos:pos }, [block, { expr:EConst(CString(Std.string(pos))), pos:pos }]), pos:pos };
 	}
 	
 }
