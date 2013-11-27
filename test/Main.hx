@@ -4,20 +4,32 @@ import cad.Debugger;
 import cad.Lock;
 import cad.Mutex;
 import cad.Thread;
+import haxe.concurrency.ConcurrentIntHash;
+import haxe.concurrency.CopyOnWriteArray;
 import sys.net.Host;
 
 class Main {
-
+	
+	static var hash = new ConcurrentIntHash<CopyOnWriteArray<Int>>();
+	
 	public static function main ():Void {
 		Debugger.listen(new Host("localhost"), 9308, true);
 		
 		trace("Starting");
-		var mutex = new Mutex();
-		trace(Thread.current().getInfo());
+		for (i in 0 ... 10) {
+			Thread.create(start);
+		}
 		while (true) {
-			mutex.acquire();
-			"asdf";
-			mutex.release();
+			for (i in hash.get() {
+				if (
+			}
+		}
+	}
+	
+	static function start ():Void {
+		while (true) {
+			hash.setIfNotExists(Std.int(Math.random() * 100), new CopyOnWriteArray());
+			hash.remove(Std.int(Math.random() * 100));
 		}
 	}
 	
