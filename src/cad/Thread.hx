@@ -10,6 +10,7 @@
 
 package cad;
 
+import cad.Mutex;
 import haxe.concurrent.AtomicInteger;
 import haxe.concurrent.ConcurrentMap;
 import haxe.CallStack;
@@ -38,23 +39,27 @@ enum ThreadState {
 	Exception(error:Dynamic);
 }
 
+typedef ThreadInfo = {
+	id:Int,
+	name:String,
+	state:ThreadState,
+	stack:Null<Array<StackItem>>
+};
+
 class Thread {
 	
 	static var ID:AtomicInteger;
 	static var THREADS:ConcurrentMap<Int, Thread>;
 	static var CURRENT:Tls<Thread>;
 	
-	public var id(default, null):Int;
-	public var name:String;
-	public var state(default, null):ThreadState;
-	public var stack(default, null):Null<Array<StackItem>>;
-	
+	var infoLock:SysMutex;
+	var info:ThreadInfo;
 	var t:SysThread;
 
 	function new (callb:Void->Void) {
-		id = ID.getAndIncrement();
-		name = "thread-" + id;
-		state = Running;
+		infoLock = new SysMutex();
+		var id = ID.getAndIncrement();
+		info = { id:id, name:"thread-" + id, state:Running, stack:null };
 		THREADS.set(id, this);
 		t = SysThread.create(threadStart.bind(callb));
 	}
@@ -88,20 +93,37 @@ class Thread {
 		return msg;
 	}
 	
+	public static function setName (name:String):Void {
+		var t = current();
+		t.infoLock.acquire();
+		t.info.name = name;
+		t.infoLock.release();
+	}
+	
 	public static function setState (state:ThreadState):Void {
 		var t = current();
+		t.infoLock.acquire();
 		switch (state) {
 			case Waiting, Sleeping:
-				t.stack = CallStack.callStack();
+				t.info.stack = CallStack.callStack();
 				//Drop all the extra callstack info from CAD -- the calling location is what's important
-				t.stack.shift();
-				t.stack.shift();
+				t.info.stack.shift();
+				t.info.stack.shift();
 			case Exception(e):
-				t.stack = CallStack.exceptionStack();
+				t.info.stack = CallStack.exceptionStack();
 			case Running, Terminated:
-				t.stack = null;
+				t.info.stack = null;
 		}
-		t.state = state;
+		t.info.state = state;
+		t.infoLock.release();
+	}
+	
+	public function getInfo ():ThreadInfo {
+		infoLock.acquire();
+		//Duplicate thread info to prevent race conditions
+		var info = Reflect.copy(this.info);
+		infoLock.release();
+		return info;
 	}
 	
 	public static function __init__ ():Void {
@@ -130,12 +152,13 @@ class Thread {
 		
 		//Wrap main thread
 		var mainThread = Type.createEmptyInstance(Thread);
+		mainThread.infoLock = new SysMutex();
 		CURRENT.value = mainThread;
 		mainThread.t = SysThread.current();
-		mainThread.id = ID.getAndIncrement();
-		mainThread.name = "main";
-		mainThread.state = Running;
-		THREADS.set(mainThread.id, mainThread);
+		var id = 0;
+		mainThread.info = { id:id, name:"main", state:Running, stack:null };
+		THREADS.set(id, mainThread);
+		ID.getAndIncrement();
 	}
 	
 }

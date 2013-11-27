@@ -43,11 +43,12 @@ class Debugger {
 		var state = new Array<Dynamic>();
 		var threads:ConcurrentMap<Int, Thread> = Reflect.field(Thread, "THREADS");
 		for (i in threads) {
-			var prefix = switch (i.state) {
+			var info = i.getInfo();
+			var prefix = switch (info.state) {
 				case Exception(e): "\n" + e;
 				default: "";
 			}
-			state.push( { name:i.name, state:Std.string(i.state), stack:prefix + CallStack.toString(i.stack) } );
+			state.push( { name:info.name, state:Std.string(info.state), stack:prefix + CallStack.toString(info.stack) } );
 		}
 		return Json.stringify(state);
 	}
@@ -56,13 +57,14 @@ class Debugger {
 		var state = "<html><head><title>Concurrent Application Debugger</title><style>table { width: 100%; text-align: left; border-spacing: 0px; } table td, table th { padding: 8px; vertical-align: top; border-top: 1px solid #ddd; } table thead tr th { border-bottom: 2px solid #ddd; border-top: none; } .wait, .sleep { color: gray; } .run { color: green; } .term, .exception { color: red; }</style></head><body><table><thead><tr><th>Name</th><th>State</th><th>Stack</th></tr></thead><tbody>";
 		var threads:ConcurrentMap<Int, Thread> = Reflect.field(Thread, "THREADS");
 		for (i in threads) {
+			var info = i.getInfo();
 			var location = "";
-			if (i.stack != null) {
-				location = CallStack.toString(i.stack).substr(1).replace("\n", "<br>");
+			if (info.stack != null) {
+				location = CallStack.toString(info.stack).substr(1).replace("\n", "<br>");
 			}
 			var tstate = "";
 			var cls = "";
-			switch (i.state) {
+			switch (info.state) {
 				case Waiting:
 					tstate = "Waiting";
 					cls = "wait";
@@ -80,12 +82,14 @@ class Debugger {
 					cls = "exception";
 					location = Std.string(e) + "<br>" + location;
 			}
-			state += "<tr class='" + cls + "'><td>" + i.name + "</td><td>" + tstate + "</td><td>" + location + "</td></tr>";
+			state += "<tr class='" + cls + "'><td>" + info.name + "</td><td>" + tstate + "</td><td>" + location + "</td></tr>";
 		}
 		return state + "</tbody></table></body></html>";
 	}
 	
 	function run ():Void {
+		Thread.setName("cad-daemon");
+		
 		while (true) {
 			var sock = s.accept();
 			var line:String = null;
@@ -113,7 +117,6 @@ class Debugger {
 		#if cad
 		var d = new Debugger(host, port, prettyOutput);
 		var t = Thread.create(d.run);
-		t.name = "cad-daemon";
 		#end
 	}
 	

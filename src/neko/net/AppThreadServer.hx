@@ -245,8 +245,7 @@ class AppThreadServer<Client, Message> {
 	function runWorker (name:String):Void {
 		#if cad
 		//Name the threads if we are using the debugger
-		var t = Thread.current();
-		t.name = name;
+		Thread.setName(name);
 		#end
 		
 		//For both io and application workers
@@ -263,7 +262,7 @@ class AppThreadServer<Client, Message> {
 	function runTimer ():Void {
 		#if cad
 		//Name the thread if we are using the debugger
-		Thread.current().name = "update";
+		Thread.setName("update");
 		#end
 		
 		var l = new Lock();
