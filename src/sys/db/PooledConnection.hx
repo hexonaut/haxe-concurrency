@@ -16,7 +16,7 @@ import cad.Mutex;
 #if neko
 import neko.vm.Tls;
 #elseif cpp
-import neko.vm.Tls;
+import cpp.vm.Tls;
 #end
 
 typedef ConnectionWrapper = {
@@ -100,7 +100,9 @@ class PooledConnection implements Connection {
 				}
 			}
 			if (conn == null) {
+				lock.release();
 				Sys.sleep(0.1);	//Sleep a bit
+				lock.acquire();
 			}
 		}
 		lock.release();

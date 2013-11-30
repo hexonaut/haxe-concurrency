@@ -4,13 +4,13 @@ import cad.Debugger;
 import cad.Lock;
 import cad.Mutex;
 import cad.Thread;
-import haxe.concurrency.ConcurrentIntHash;
-import haxe.concurrency.CopyOnWriteArray;
+import haxe.concurrent.ConcurrentMap;
+import haxe.concurrent.CopyOnWriteArray;
 import sys.net.Host;
 
 class Main {
 	
-	static var hash = new ConcurrentIntHash<CopyOnWriteArray<Int>>();
+	static var hash = new ConcurrentMap<Int, CopyOnWriteArray<Int>>();
 	
 	public static function main ():Void {
 		Debugger.listen(new Host("localhost"), 9308, true);
@@ -20,8 +20,8 @@ class Main {
 			Thread.create(start);
 		}
 		while (true) {
-			for (i in hash.get() {
-				if (
+			for (i in hash.get(1)) {
+				
 			}
 		}
 	}
