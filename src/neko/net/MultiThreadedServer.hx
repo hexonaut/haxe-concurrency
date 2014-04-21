@@ -125,8 +125,9 @@ class MultiThreadedServer < Client, Message > {
 						
 						clients.push(sock);
 					} catch (e:Dynamic) {
-						doException(e);
+						if (serv != i) clients.remove(i);
 						try { if (sock != null) sock.close(); } catch (e:Dynamic) { };
+						doException(e);
 					}
 					
 					//Read initial data
