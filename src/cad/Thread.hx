@@ -11,9 +11,9 @@
 package cad;
 
 import cad.Mutex;
-import haxe.concurrency.AtomicInteger;
-import haxe.concurrency.ConcurrentIntHash;
-import haxe.Stack;
+import haxe.concurrent.AtomicInteger;
+import haxe.concurrent.ConcurrentMap;
+import haxe.CallStack;
 import sys.net.Socket;
 #if neko
 import neko.vm.Tls;
@@ -49,7 +49,7 @@ typedef ThreadInfo = {
 class Thread {
 	
 	static var ID:AtomicInteger;
-	static var THREADS:ConcurrentIntHash<Thread>;
+	static var THREADS:ConcurrentMap<Int, Thread>;
 	static var CURRENT:Tls<Thread>;
 	
 	var infoLock:SysMutex;
@@ -61,7 +61,7 @@ class Thread {
 		var id = ID.getAndIncrement();
 		info = { id:id, name:"thread-" + id, state:Running, stack:null };
 		THREADS.set(id, this);
-		t = SysThread.create(callback(threadStart, callb));
+		t = SysThread.create(threadStart.bind(callb));
 	}
 	
 	function threadStart (callb:Void->Void):Void {
@@ -105,12 +105,12 @@ class Thread {
 		t.infoLock.acquire();
 		switch (state) {
 			case Waiting, Sleeping:
-				t.info.stack = Stack.callStack();
+				t.info.stack = CallStack.callStack();
 				//Drop all the extra callstack info from CAD -- the calling location is what's important
 				t.info.stack.shift();
 				t.info.stack.shift();
 			case Exception(e):
-				t.info.stack = Stack.exceptionStack();
+				t.info.stack = CallStack.exceptionStack();
 			case Running, Terminated:
 				t.info.stack = null;
 		}
@@ -128,7 +128,7 @@ class Thread {
 	
 	public static function __init__ ():Void {
 		ID = new AtomicInteger();
-		THREADS = new ConcurrentIntHash<Thread>();
+		THREADS = new ConcurrentMap<Int, Thread>();
 		CURRENT = new Tls<Thread>();
 		
 		//Override default Sys.sleep method to include debugger info

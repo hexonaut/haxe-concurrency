@@ -4,7 +4,7 @@ Data Structures
 ===============
 
 * CopyOnWriteArray - A data structure for read-heavy storage. As the name suggests, the array is copied when a modification is performed.
-* ConcurrentHash/ConcurrentIntHash - Provides a Hash which is thread safe.
+* ConcurrentMap - Provides a Map which is thread safe.
 
 Performance
 ===========
@@ -18,10 +18,10 @@ Comparison to Non-Concurrent Data Structures
 * CopyOnWriteArray Write MOD 1000: 3487 ns
 * Array Read MOD 1000: 67 ns
 * CopyOnWriteArray Read MOD 1000: 130 ns
-* IntHash Write: 149 ns
-* ConcurrentIntHash Write: 342 ns
-* IntHash Read: 66 ns
-* ConcurrentIntHash Read: 236 ns
+* IntMap Write: 149 ns
+* ConcurrentIntMap Write: 342 ns
+* IntMap Read: 66 ns
+* ConcurrentIntMap Read: 236 ns
 
 Throughput Speed Testing
 ------------------------

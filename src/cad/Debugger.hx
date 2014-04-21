@@ -11,9 +11,9 @@
 package cad;
 
 import cad.Thread;
-import haxe.concurrency.ConcurrentIntHash;
+import haxe.concurrent.ConcurrentMap;
+import haxe.CallStack;
 import haxe.Json;
-import haxe.Stack;
 import sys.net.Host;
 import sys.net.Socket;
 
@@ -41,26 +41,26 @@ class Debugger {
 	
 	function buildJSON ():String {
 		var state = new Array<Dynamic>();
-		var threads:ConcurrentIntHash<Thread> = Reflect.field(Thread, "THREADS");
+		var threads:ConcurrentMap<Int, Thread> = Reflect.field(Thread, "THREADS");
 		for (i in threads) {
 			var info = i.getInfo();
 			var prefix = switch (info.state) {
 				case Exception(e): "\n" + e;
 				default: "";
 			}
-			state.push( { name:info.name, state:Std.string(info.state), stack:prefix + Stack.toString(info.stack) } );
+			state.push( { name:info.name, state:Std.string(info.state), stack:prefix + CallStack.toString(info.stack) } );
 		}
 		return Json.stringify(state);
 	}
 	
 	function buildHTML ():String {
 		var state = "<html><head><title>Concurrent Application Debugger</title><style>table { width: 100%; text-align: left; border-spacing: 0px; } table td, table th { padding: 8px; vertical-align: top; border-top: 1px solid #ddd; } table thead tr th { border-bottom: 2px solid #ddd; border-top: none; } .wait, .sleep { color: gray; } .run { color: green; } .term, .exception { color: red; }</style></head><body><table><thead><tr><th>Name</th><th>State</th><th>Stack</th></tr></thead><tbody>";
-		var threads:ConcurrentIntHash<Thread> = Reflect.field(Thread, "THREADS");
+		var threads:ConcurrentMap<Int, Thread> = Reflect.field(Thread, "THREADS");
 		for (i in threads) {
 			var info = i.getInfo();
 			var location = "";
 			if (info.stack != null) {
-				location = Stack.toString(info.stack).substr(1).replace("\n", "<br>");
+				location = CallStack.toString(info.stack).substr(1).replace("\n", "<br>");
 			}
 			var tstate = "";
 			var cls = "";

@@ -225,19 +225,19 @@ class PooledConnection implements Connection {
 	public function startTransaction ():Void {
 		if (closed) throw "Already closed";
 		
-		return doQuery("startTransaction", [], START);
+		doQuery("startTransaction", [], START);
 	}
 	
 	public function commit ():Void {
 		if (closed) throw "Already closed";
 		
-		return doQuery("commit", [], COMMIT);
+		doQuery("commit", [], COMMIT);
 	}
 	
 	public function rollback ():Void {
 		if (closed) throw "Already closed";
 		
-		return doQuery("rollback", [], ROLLBACK);
+		doQuery("rollback", [], ROLLBACK);
 	}
 	
 }
