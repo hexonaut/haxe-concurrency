@@ -79,7 +79,6 @@ class PooledConnection implements Connection {
 				delay = delay << 1;
 			}
 		}
-		return null;
 	}
 	
 	function getAvailableConnection ():Connection {
@@ -96,6 +95,7 @@ class PooledConnection implements Connection {
 				if (connWrapper.ready) {
 					conn = connWrapper.conn;
 					connWrapper.ready = false;
+					nextIndex = (nextIndex + 1) % conns.length;
 					break;
 				}
 			}

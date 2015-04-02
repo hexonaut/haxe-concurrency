@@ -11,7 +11,7 @@
 package haxe.concurrent;
 
 import cad.Mutex;
-import Map;
+import haxe.Constraints.IMap;
 import haxe.ds.StringMap;
 import haxe.ds.ObjectMap;
 import haxe.ds.EnumValueMap;
@@ -23,7 +23,7 @@ import haxe.ds.IntMap;
  * @author Sam MacPherson
  */
 
-@:multiType
+@:multiType(K)
 abstract ConcurrentMap<K,V>(IMap<K,V>) {
 	
 	public function new ();
@@ -110,25 +110,25 @@ abstract ConcurrentMap<K,V>(IMap<K,V>) {
 		return result;
 	}
 	
-	@:to static inline function toStringMap(t:IMap<String,V>):StringMap<V> {
+	@:to static inline function toStringMap<K:String,V>(t:IMap<K,V>):StringMap<V> {
 		var map = new StringMap<V>();
 		Reflect.setField(map, "__lock", new Mutex());
 		return map;
 	}
 	
-	@:to static inline function toIntMap(t:IMap<Int,V>):IntMap<V> {
+	@:to static inline function toIntMap<K:Int,V>(t:IMap<K,V>):IntMap<V> {
 		var map = new IntMap<V>();
 		Reflect.setField(map, "__lock", new Mutex());
 		return map;
 	}
 	
-	@:to static inline function toEnumValueMapMap<K:EnumValue>(t:IMap<K,V>):EnumValueMap<K,V> {
+	@:to static inline function toEnumValueMapMap<K:EnumValue,V>(t:IMap<K,V>):EnumValueMap<K,V> {
 		var map = new EnumValueMap<K, V>();
 		Reflect.setField(map, "__lock", new Mutex());
 		return map;
 	}
 	
-	@:to static inline function toObjectMap<K:{ }>(t:IMap<K,V>):ObjectMap<K,V> {
+	@:to static inline function toObjectMap<K:{ },V>(t:IMap<K,V>):ObjectMap<K,V> {
 		var map = new ObjectMap<K, V>();
 		Reflect.setField(map, "__lock", new Mutex());
 		return map;
